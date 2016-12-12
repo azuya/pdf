@@ -4,20 +4,17 @@ This module is used to perform PDF generation from HTML view.
 
 ## Requirements
 
-You must install TCPDF as vendor
+You must install DOMPDF as vendor
 
-https://tcpdf.org/
+https://github.com/dompdf/dompdf
 
 ## Example:
 
-Basic render generated pdf:
+Basic render generated pdf and stream to output:
 
 ```php
         $view = View::factory('pdf/test');
-        $pdf = PDF::factory($view);
-
-        $this->response->headers('Content-Type', 'application/pdf');
-        $this->response->body($pdf);
+        PDF::factory($view)->stream();
 ```
 
 Render cached for 24 hrs. generated pdf:
@@ -44,6 +41,13 @@ Save PDF:
         $pdf = PDF::factory($view)->save($file);
 ```
 
+Download PDF:
+
+```php
+        $view = View::factory('pdf/test');
+        $pdf = PDF::factory($view)->download('test.pdf');
+```
+
 ## Config
 
 pdf.php
@@ -52,20 +56,9 @@ pdf.php
 return array(
     // Application defaults
     'default' => array(
-        'document' => array(
-            'creator' => 'Kohana',
-            'author' => 'Kohana',
-            'title' => 'Kohana',
-            'subject' => 'Kohana',
-            'keywords' => 'TCPDF, PDF, Kohana',
-            'header_title' => 'PDF document',
-            'header_string' => 'Kohana',
-            'header_logo' => '',
-            'header_logo_width' => 0,
-        ),
         'page' => array(
             'format' => 'A4',
-            'orientation' => 'P', // P - portrait, L - landscape
+            'orientation' => 'portrait',
             'unit' => 'mm',
             'margins' => array(
                 'header' => 5,
@@ -89,23 +82,6 @@ return array(
                 'name' => 'courier',
                 'size' => 10,
             ),
-        ),
-        'scaling' => array(
-            'image_scale_ratio' => 1.25,
-            'head_maginification' => 1.1,
-            'cell_height_ratio' => 1.25,
-            'title_magnification' => 1.3,
-            'small_ratio' => 2 / 3,
-        ),
-        'options' => array(
-            'thai_topchars' => true,
-            'calls_in_html' => false,
-            'throw_exception_error' => false,
-            'timezone' => 'UTC',
-            'unicode' => true,
-            'encoding' => 'UTF-8',
-            'diskcache' => false,
-            'pdfa' => false,
         ),
     ),
 );

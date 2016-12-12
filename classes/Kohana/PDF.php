@@ -44,7 +44,9 @@ class Kohana_PDF
         $this->_config = $this->config_group() + $this->_config;
 
         // PDF setup
-        $this->setup($config);        
+        $this->setup($config);
+
+        $this->_setup_vendor();
     }
 
     /**
@@ -103,23 +105,39 @@ class Kohana_PDF
     }
 
     /**
-     * Renders the PDF.
+     * Downloads the PDF.
      *
-     * @return  PDF output
      */
-    public function render()
-    {        
-        return $this->_run_vendor('S');
+    public function download($file)
+    {
+        $this->_pdf->loadHtml($this->_view);
+        $this->_pdf->render();
+        $this->_pdf->stream($file);
     }
 
     /**
      * Save the PDF.
      *
-     * @return  empty string
+     * @return  PDF as string
      */
     public function save($file)
     {
-        return $this->_run_vendor('F', $file);
+        $this->_pdf->loadHtml($this->_view);
+        $this->_pdf->render();
+        $output = $this->_pdf->output();
+        file_put_contents($file, $output);
+    }
+
+    /**
+     * Streams the PDF.
+     *
+     * @return  PDF output
+     */
+    public function stream()
+    {
+        $this->_pdf->loadHtml($this->_view);
+        $this->_pdf->render();
+        $this->_pdf->stream('document.pdf', array('Attachment' => 0));
     }
 
     /**
@@ -145,62 +163,12 @@ class Kohana_PDF
         $this->setup(array($key => $value));
     }
 
-    /**
-     * Magic method, returns the output of [PDF::render].
-     *
-     * @return  string
-     * @uses    PDF::render
-     */
-    public function __toString()
-    {
-        try
-        {
-            return $this->render();
-        } catch (Exception $e)
-        {
-            $error_response = Kohana_Exception::_handler($e);
-
-            return $error_response->body();
-        }
-    }
-
     protected function _setup_vendor()
     {
-        include_once Kohana::find_file('vendor/tcpdf', 'tcpdf');
-        $this->_pdf = new TCPDF($this->_config['page']['orientation'], $this->_config['page']['unit'], $this->_config['page']['format'], $this->_config['options']['unicode'], $this->_config['options']['encoding'], $this->_config['options']['diskcache'], $this->_config['options']['pdfa']);
-
-        $this->_pdf->SetCreator($this->_config['document']['creator']);
-        $this->_pdf->SetAuthor($this->_config['document']['author']);
-        $this->_pdf->SetTitle($this->_config['document']['title']);
-        $this->_pdf->SetSubject($this->_config['document']['subject']);
-        $this->_pdf->SetKeywords($this->_config['document']['keywords']);
-
-        $this->_pdf->SetHeaderData($this->_config['document']['header_logo'], $this->_config['document']['header_logo_width'], $this->_config['document']['header_title'], $this->_config['document']['header_string']);
-
-        $this->_pdf->setHeaderFont(Array($this->_config['fonts']['main']['name'], '', $this->_config['fonts']['main']['size']));
-        $this->_pdf->setFooterFont(Array($this->_config['fonts']['data']['name'], '', $this->_config['fonts']['data']['size']));
-
-        $this->_pdf->SetDefaultMonospacedFont($this->_config['fonts']['monospaced']['name']);
-
-        $this->_pdf->SetMargins($this->_config['page']['margins']['left'], $this->_config['page']['margins']['top'], $this->_config['page']['margins']['right']);
-        $this->_pdf->SetHeaderMargin($this->_config['page']['margins']['header']);
-        $this->_pdf->SetFooterMargin($this->_config['page']['margins']['footer']);
-
-        $this->_pdf->SetAutoPageBreak(TRUE, $this->_config['page']['margins']['bottom']);
-
-        $this->_pdf->setImageScale($this->_config['scaling']['image_scale_ratio']);
-
-        $this->_pdf->SetFont($this->_config['fonts']['data']['name'], '', $this->_config['fonts']['data']['size'], '', false);
-        $this->_pdf->AddPage();
-        $this->_pdf->writeHTML($this->_view, true, false, true, false, '');
-
+        Kohana::load(Kohana::find_file('vendor', 'dompdf/autoload.inc'));
+        $this->_pdf = new Dompdf\Dompdf();
+        $this->_pdf->setPaper(Arr::path($this->_config, 'page.format'), Arr::path($this->_config, 'page.orientation'));
         return $this;
-    }
-    
-    protected function _run_vendor($option = 'S', $file = 'doc.pdf')
-    {
-        $this->_setup_vendor();
-        return $this->_pdf->Output($file, $option);        
     }
 
 }
